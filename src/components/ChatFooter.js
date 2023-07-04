@@ -1,38 +1,114 @@
-import { MicRounded, Send } from "@mui/icons-material"
+import recordAudio from "@/utils/recordAudio";
+import {
+  CancelRounded,
+  CheckCircleRounded,
+  MicRounded,
+  Send,
+} from "@mui/icons-material";
+import { useEffect, useRef, useState } from "react";
 
-export default function ChatFooter() {
-    const canRecord = true
-    const recordIcons = (
-        <>
-            <Send style={{ width: 20, height: 20, color: "white"}} />
-            <MicRounded style={{ width: 24, height: 24, color: "white"}} />
-        </>
-    )
+export default function ChatFooter({
+  input,
+  onChange,
+  image,
+  user,
+  room,
+  roomId,
+  sendMessage,
+  setAudioId,
+}) {
+  const record = useRef();
+  const [isRecording, setRecording] = useState(false);
+  const [duration, setDuraion] = useState("00:00");
+  const timerInterval = useRef();
+  const canRecord =
+    !!navigator.mediaDevices.getUserMedia && !!window.MediaRecorder;
+  const canSendMessage = input.trim() || (input === "" && image);
+  const recordIcons = (
+    <>
+      <Send style={{ width: 20, height: 20, color: "white" }} />
+      <MicRounded style={{ width: 24, height: 24, color: "white" }} />
+    </>
+  );
+
+  useEffect(() => {
+    if (isRecording) {
+      record.current.start();
+      startTimer();
+    }
+
+    function pad(value) {
+        return String(value).length < 2 ? `0${value}` : value;
+    }
+
+    function startTimer() {
+      const start = Date.now();
+      timerInterval.current = setInterval(setTime, 100);
+
+      function setTime() {
+        const timeElapsed = Date.now() - start;
+        const totalSeconds = Math.floor(timeElapsed / 1000)
+        const minutes = pad(parseInt(totalSeconds / 60))
+        const seconds = pad(parseInt(totalSeconds % 60))
+        const duration = `${minutes}:${seconds}`
+        setDuraion(duration)
+      }
+    }
+  }, [isRecording]);
+
+  async function startRecording(event) {
+    event.preventDefault();
+    record.current = await recordAudio();
+    setRecording(true);
+    setAudioId("");
+  }
 
   return (
     <div className="chat__footer">
-        <form>
-            <input placeholder="Type a message" />
-            {
-                canRecord ? (
-                    <button type="button" className="send__btn">
-                        {recordIcons}
-                    </button>
-                ) : (
-                    <>
-                        <label htmlFor="capture" className="send__btn">{recordIcons}</label>
-                        <input
-                            style={{ display: "none" }}
-                            type="file"
-                            id="capture"
-                            accept="audio/*"
-                            capture
-                        />
-                    </>
-                )
-
-            }
-        </form>
+      <form>
+        <input
+          value={input}
+          onChange={onChange}
+          placeholder="Type a message"
+          style={{
+            width: isRecording ? "calc(100% - 20px)" : "calc(100% - 112px)",
+          }}
+        />
+        {canRecord ? (
+          <button
+            onClick={canSendMessage ? sendMessage : startRecording}
+            type="submit"
+            className="send__btn"
+          >
+            {recordIcons}
+          </button>
+        ) : (
+          <>
+            <label htmlFor="capture" className="send__btn">
+              {recordIcons}
+            </label>
+            <input
+              style={{ display: "none" }}
+              type="file"
+              id="capture"
+              accept="audio/*"
+              capture
+            />
+          </>
+        )}
+      </form>
+      {isRecording && (
+        <div className="record">
+          <CancelRounded style={{ width: 30, height: 30, color: "#f20519" }} />
+          <div>
+            <div className="record__redcircle" />
+            <div className="record__duration">{duration}</div>
+          </div>
+          <CheckCircleRounded
+            style={{ width: 30, height: 30, color: "#41bf49" }}
+          />
+        </div>
+      )}
     </div>
-  )
+  );
 }
