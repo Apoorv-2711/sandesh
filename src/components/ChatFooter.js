@@ -104,11 +104,9 @@ export default function ChatFooter({
     });
     await uploadBytes(ref(storage, `audio/${audioName}`), audioFile);
     const url = await getDownloadURL(ref(storage, `audio/${audioName}`));
-    await updateDoc(
-      doc(db, `rooms/${roomId}/messages/${newDoc.id}`), {
-        audioUrl: url,
-      }
-    );
+    await updateDoc(doc(db, `rooms/${roomId}/messages/${newDoc.id}`), {
+      audioUrl: url,
+    });
   }
 
   function audioInputChange(event) {
@@ -151,6 +149,7 @@ export default function ChatFooter({
               id="capture"
               accept="audio/*"
               capture
+              onChange={audioInputChange}
             />
           </>
         )}
